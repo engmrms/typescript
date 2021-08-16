@@ -125,8 +125,8 @@ const empInfo = {
     desciption: "this is my job",
   },
 };
-const empRes = empInfo?.job?.title;
-console.log(empRes);
+// const empRes = empInfo?.job?.title;
+// console.log(empRes);
 
 const userfield = "";
 const feedback = userfield ?? "Default";
@@ -139,5 +139,5 @@ const adventurer = {
   },
 };
 
-const dogName = adventurer?.dog?.name;
-console.log(dogName);
+// const dogName = adventurer?.dog?.name;
+// console.log(dogName);

@@ -1,5 +1,4 @@
 "use strict";
-var _a, _b, _c, _d;
 const b1 = 5;
 let x1;
 x1 = {
@@ -80,10 +79,10 @@ const empInfo = {
         desciption: "this is my job",
     },
 };
-const empRes = (_b = (_a = empInfo) === null || _a === void 0 ? void 0 : _a.job) === null || _b === void 0 ? void 0 : _b.title;
-console.log(empRes);
+// const empRes = empInfo?.job?.title;
+// console.log(empRes);
 const userfield = "";
-const feedback = (userfield !== null && userfield !== void 0 ? userfield : "Default");
+const feedback = userfield !== null && userfield !== void 0 ? userfield : "Default";
 console.log(feedback);
 const adventurer = {
     name: "Alice",
@@ -91,6 +90,6 @@ const adventurer = {
         name: "Dinah",
     },
 };
-const dogName = (_d = (_c = adventurer) === null || _c === void 0 ? void 0 : _c.dog) === null || _d === void 0 ? void 0 : _d.name;
-console.log(dogName);
+// const dogName = adventurer?.dog?.name;
+// console.log(dogName);
 //# sourceMappingURL=advancedTYpe.js.map
