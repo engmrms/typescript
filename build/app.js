@@ -5,6 +5,33 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+class ProjectState {
+    constructor() {
+        this.listner = [];
+        this.projects = [];
+    }
+    static getInstance() {
+        if (!this.instance)
+            this.instance = new ProjectState();
+        return this.instance;
+    }
+    addProject(title, description, numPeople) {
+        const newProject = {
+            id: Math.random(),
+            title: title,
+            desciption: description,
+            people: numPeople
+        };
+        this.projects.push(newProject);
+        for (const listnerfn of this.listner) {
+            listnerfn(this.projects.slice());
+        }
+    }
+    addListner(listnerFn) {
+        this.listner.push(listnerFn);
+    }
+}
+const projectState = ProjectState.getInstance();
 function validation(validateInput) {
     let isvalid = true;
     if (validateInput.required) {
@@ -59,8 +86,9 @@ class ProjectInput {
     submitHandler(event) {
         event.preventDefault();
         const eneteredValue = this.gatherUserInput();
-        if (eneteredValue) {
-            console.log(eneteredValue);
+        if (Array.isArray(eneteredValue)) {
+            const [title, desc, people] = eneteredValue;
+            projectState.addProject(title, desc, people);
             this.clearEntered();
         }
     }
@@ -93,5 +121,40 @@ class ProjectInput {
 __decorate([
     AutoBind
 ], ProjectInput.prototype, "submitHandler", null);
+class ProjectList {
+    constructor(type) {
+        this.type = type;
+        this.assginedProjects = [];
+        this.templateElement = document.getElementById("project-list");
+        this.hostElement = document.getElementById("app");
+        const importNode = document.importNode(this.templateElement.content, true);
+        this.elemnt = importNode.firstElementChild;
+        this.elemnt.id = `${this.type}-projects`;
+        projectState.addListner((projects) => {
+            this.assginedProjects = projects;
+            this.renderProjects();
+        });
+        this.attach();
+        this.renderContent();
+    }
+    renderProjects() {
+        const listEl = document.getElementById(`${this.type}-project-list`);
+        for (const prjItem of this.assginedProjects) {
+            const listItem = document.createElement("li");
+            listItem.textContent = prjItem.title;
+            listEl.appendChild(listItem);
+        }
+    }
+    renderContent() {
+        const listId = `${this.type}-project-list`;
+        this.elemnt.querySelector("ul").id = listId;
+        this.elemnt.querySelector("h2").textContent = `${this.type.toUpperCase()} PROJECTS`;
+    }
+    attach() {
+        this.hostElement.insertAdjacentElement("beforeend", this.elemnt);
+    }
+}
 const prjInput = new ProjectInput();
+const activePrjList = new ProjectList("active");
+const finishedPrjList = new ProjectList("finished");
 //# sourceMappingURL=app.js.map
