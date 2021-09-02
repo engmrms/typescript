@@ -4,68 +4,11 @@ interface DragProject {
   dragStartedHandler(event: DragEvent): void;
   dragEndedHnadler(event: DragEvent): void;
 }
-interface DropProject {
+interface DragTargetProject {
   dragOverHandler(event: DragEvent): void;
   dragLeaveHnadler(event: DragEvent): void;
   dropHandler(event: DragEvent): void;
 }
-
-//Project Type
-enum ProjectStatus {
-  Active = "active",
-  Finished = "finished",
-}
-class Project {
-  constructor(
-    public id: string,
-    public title: string,
-    public description: string,
-    public people: number,
-    public status: ProjectStatus
-  ) {}
-}
-
-type Listner<T> = (items: T[]) => void;
-
-class State<T> {
-  protected listner: Listner<T>[] = [];
-
-  addListner(listnerFn: Listner<T>) {
-    this.listner.push(listnerFn);
-  }
-}
-
-class ProjectState extends State<Project> {
-  private projects: Project[] = [];
-  private static instance: ProjectState;
-
-  private constructor() {
-    super();
-  }
-
-  static getInstance() {
-    if (!this.instance) this.instance = new ProjectState();
-
-    return this.instance;
-  }
-
-  addProject(title: string, description: string, numPeople: number) {
-    const newProject = new Project(
-      Math.random().toString(),
-      title,
-      description,
-      numPeople,
-      ProjectStatus.Active
-    );
-    this.projects.push(newProject);
-
-    for (const listnerfn of this.listner) {
-      listnerfn(this.projects.slice());
-    }
-  }
-}
-
-const projectState = ProjectState.getInstance();
 
 interface Validatable {
   value: string | number;
@@ -74,6 +17,12 @@ interface Validatable {
   maxLength?: number;
   min?: number;
   max?: number;
+}
+
+//Project Type
+enum ProjectStatus {
+  Active = "active",
+  Finished = "finished",
 }
 
 function validation(validateInput: Validatable) {
@@ -121,6 +70,67 @@ function AutoBind(
     },
   };
   return adjDescreptor;
+}
+
+class Project {
+  constructor(
+    public id: string,
+    public title: string,
+    public description: string,
+    public people: number,
+    public status: ProjectStatus
+  ) {}
+}
+
+type Listner<T> = (items: T[]) => void;
+
+class State<T> {
+  protected listner: Listner<T>[] = [];
+
+  addListner(listnerFn: Listner<T>) {
+    this.listner.push(listnerFn);
+  }
+}
+
+class ProjectState extends State<Project> {
+  private projects: Project[] = [];
+  private static instance: ProjectState;
+
+  private constructor() {
+    super();
+  }
+
+  static getInstance() {
+    if (!this.instance) this.instance = new ProjectState();
+
+    return this.instance;
+  }
+
+  addProject(title: string, description: string, numPeople: number) {
+    const newProject = new Project(
+      Math.random().toString(),
+      title,
+      description,
+      numPeople,
+      ProjectStatus.Active
+    );
+    this.projects.push(newProject);
+    this.updateListener();
+  }
+
+  moveProject(projectId: string, newStatus: ProjectStatus) {
+    const project = this.projects.find((prj) => prj.id === projectId);
+    if (project && project.status !== newStatus) {
+      project.status = newStatus;
+      this.updateListener();
+    }
+  }
+
+  private updateListener() {
+    for (const listnerfn of this.listner) {
+      listnerfn(this.projects.slice());
+    }
+  }
 }
 
 abstract class Component<T extends HTMLElement, U extends HTMLElement> {
@@ -172,10 +182,11 @@ class ProjectItem
   }
   @AutoBind
   dragStartedHandler(event: DragEvent) {
-    console.log("start", event);
+    event.dataTransfer!.setData("text/plain", this.project.id);
+    event.dataTransfer!.effectAllowed = "move";
   }
   dragEndedHnadler(event: DragEvent) {
-    console.log("end", event);
+    //console.log("end", event);
   }
   renderContent() {
     this.elemnt.querySelector("h2")!.textContent = this.project.title;
@@ -258,7 +269,10 @@ class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
   }
 }
 
-class ProjectList extends Component<HTMLDivElement, HTMLElement> {
+class ProjectList
+  extends Component<HTMLDivElement, HTMLElement>
+  implements DragTargetProject
+{
   private assginedProjects: Project[] = [];
 
   constructor(private type: ProjectStatus) {
@@ -267,8 +281,29 @@ class ProjectList extends Component<HTMLDivElement, HTMLElement> {
     this.configure();
     this.renderContent();
   }
+  @AutoBind
+  dragLeaveHnadler(_: DragEvent) {
+    const listEl = this.elemnt.querySelector("ul")!;
+    listEl.classList.remove("droppable");
+  }
+  @AutoBind
+  dropHandler(event: DragEvent) {
+    const projectId = event.dataTransfer!.getData("text/plain");
+    projectState.moveProject(projectId, this.type);
+  }
+  @AutoBind
+  dragOverHandler(event: DragEvent) {
+    if (event.dataTransfer && event.dataTransfer?.types[0] === "text/plain") {
+      event.preventDefault();
+      const listEl = this.elemnt.querySelector("ul")!;
+      listEl.classList.add("droppable");
+    }
+  }
 
   configure() {
+    this.elemnt.addEventListener("dragover", this.dragOverHandler);
+    this.elemnt.addEventListener("dragleave", this.dragLeaveHnadler);
+    this.elemnt.addEventListener("drop", this.dropHandler);
     projectState.addListner((projects: Project[]) => {
       const relativeProject = projects.filter(
         (item) => item.status === this.type
@@ -295,6 +330,8 @@ class ProjectList extends Component<HTMLDivElement, HTMLElement> {
     }
   }
 }
+
+const projectState = ProjectState.getInstance();
 
 const prjInput = new ProjectInput();
 
